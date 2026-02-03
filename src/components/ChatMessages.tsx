@@ -6,7 +6,6 @@ export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  imageUrl?: string;
 }
 
 interface ChatMessagesProps {
@@ -60,18 +59,9 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
                 : "bg-card border border-border/50"
             )}
           >
-            {message.content && (
-              <p className="text-sm whitespace-pre-wrap text-foreground">
-                {message.content}
-              </p>
-            )}
-            {message.imageUrl && (
-              <img 
-                src={message.imageUrl} 
-                alt="Generated image" 
-                className="mt-2 rounded-lg max-w-full h-auto border border-border/30"
-              />
-            )}
+            <p className="text-sm whitespace-pre-wrap text-foreground">
+              {message.content}
+            </p>
           </div>
         </div>
       ))}

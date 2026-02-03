@@ -10,9 +10,16 @@ interface Message {
   content: string;
 }
 
+interface CustomPersonality {
+  name: string;
+  description: string;
+  prompt: string;
+}
+
 interface ChatRequest {
   messages: Message[];
   personality: string;
+  customPersonality?: CustomPersonality;
 }
 
 const personalityPrompts: Record<string, string> = {
@@ -30,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, personality = "CHAOS" }: ChatRequest = await req.json();
+    const { messages, personality = "CHAOS", customPersonality }: ChatRequest = await req.json();
     
     const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
     if (!DEEPSEEK_API_KEY) {
@@ -38,9 +45,15 @@ serve(async (req) => {
       throw new Error("DEEPSEEK_API_KEY is not configured");
     }
 
-    const systemPrompt = personalityPrompts[personality] || personalityPrompts.CHAOS;
-
-    console.log(`Chat request received. Personality: ${personality}, Messages: ${messages.length}`);
+    // Use custom personality prompt if provided, otherwise use predefined
+    let systemPrompt: string;
+    if (personality === "Custom" && customPersonality?.prompt) {
+      systemPrompt = customPersonality.prompt;
+      console.log(`Chat request received. Custom Personality: ${customPersonality.name}, Messages: ${messages.length}`);
+    } else {
+      systemPrompt = personalityPrompts[personality] || personalityPrompts.CHAOS;
+      console.log(`Chat request received. Personality: ${personality}, Messages: ${messages.length}`);
+    }
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",

@@ -1,4 +1,4 @@
-import type { PersonalityMode } from "@/components/PersonalityModal";
+import type { PersonalityMode, CustomPersonality } from "@/components/PersonalityModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -10,12 +10,14 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 export async function streamChat({
   messages,
   personality,
+  customPersonality,
   onDelta,
   onDone,
   onError,
 }: {
   messages: Message[];
   personality: PersonalityMode;
+  customPersonality?: CustomPersonality;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -27,7 +29,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, personality }),
+      body: JSON.stringify({ messages, personality, customPersonality }),
     });
 
     if (!resp.ok) {

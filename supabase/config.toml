@@ -3,5 +3,5 @@ project_id = "jcjmmyfbkmevyouiuaoe"
 [functions.chat]
 verify_jwt = false
 
-[functions.generate-image]
+[functions.generate-personality]
 verify_jwt = false

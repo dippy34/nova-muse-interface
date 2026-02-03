@@ -1,58 +1,32 @@
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { PersonalityModal, PersonalityMode } from "@/components/PersonalityModal";
+import { PersonalityModal, PersonalityMode, CustomPersonality } from "@/components/PersonalityModal";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessages, Message } from "@/components/ChatMessages";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { streamChat } from "@/lib/chat-api";
-import { generateImage } from "@/lib/image-api";
 import { toast } from "sonner";
 
 const Index = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMode, setCurrentMode] = useState<PersonalityMode>("CHAOS");
+  const [customPersonality, setCustomPersonality] = useState<CustomPersonality | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleModeChange = (mode: PersonalityMode) => {
+  const handleModeChange = (mode: PersonalityMode, custom?: CustomPersonality) => {
     setCurrentMode(mode);
+    if (mode === "Custom" && custom) {
+      setCustomPersonality(custom);
+      toast.success(`Switched to Custom Mode: ${custom.name}`);
+    } else {
+      setCustomPersonality(null);
+      toast.success(`Switched to ${mode} Mode`);
+    }
     setIsModalOpen(false);
-    toast.success(`Switched to ${mode} Mode`);
   };
 
   const handleSendMessage = async (content: string) => {
-    // Check for image generation command
-    const imageMatch = content.match(/^\/image\s+(.+)$/i);
-    
-    if (imageMatch) {
-      const prompt = imageMatch[1];
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: "user",
-        content: `🎨 Generate image: ${prompt}`,
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
-
-      const result = await generateImage(prompt);
-      
-      if (result.error) {
-        toast.error(result.error);
-        setIsLoading(false);
-        return;
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: result.text || "Here's your generated image:",
-        imageUrl: result.imageUrl,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-      return;
-    }
-
     // Regular chat message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -92,6 +66,7 @@ const Index = () => {
         content: m.content,
       })),
       personality: currentMode,
+      customPersonality: customPersonality || undefined,
       onDelta: updateAssistantMessage,
       onDone: () => setIsLoading(false),
       onError: (error) => {
@@ -121,6 +96,7 @@ const Index = () => {
         onClose={() => setIsModalOpen(false)}
         currentMode={currentMode}
         onModeChange={handleModeChange}
+        currentCustom={customPersonality}
       />
     </div>
   );
