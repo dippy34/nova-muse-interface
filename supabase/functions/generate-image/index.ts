@@ -24,32 +24,31 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY is not configured");
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    console.log(`Image generation request: ${prompt}`);
+    console.log(`DALL-E 3 image generation request: ${prompt}`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          { role: "user", content: prompt }
-        ],
-        modalities: ["image", "text"],
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Lovable AI error: ${response.status} - ${errorText}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`OpenAI API error: ${response.status}`, errorData);
       
       if (response.status === 429) {
         return new Response(
@@ -57,29 +56,29 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "Payment required, please add credits to your workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Invalid API key." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
+      const errorMessage = errorData?.error?.message || `Image generation failed: ${response.status}`;
       return new Response(
-        JSON.stringify({ error: `Image generation failed: ${response.status}` }),
+        JSON.stringify({ error: errorMessage }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
-    console.log("Image generation response received");
+    console.log("DALL-E 3 image generation response received");
 
-    const message = data.choices?.[0]?.message;
-    const textContent = message?.content || "";
-    const imageUrl = message?.images?.[0]?.image_url?.url || null;
+    const imageUrl = data.data?.[0]?.url || null;
+    const revisedPrompt = data.data?.[0]?.revised_prompt || "";
 
     return new Response(
       JSON.stringify({ 
-        text: textContent,
+        text: revisedPrompt,
         imageUrl: imageUrl 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
