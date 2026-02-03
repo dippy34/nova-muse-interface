@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface ParrotLogoProps {
+interface SkullLogoProps {
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
 }
@@ -12,7 +12,7 @@ const sizes = {
   xl: "w-32 h-32",
 };
 
-export function ParrotLogo({ className, size = "md" }: ParrotLogoProps) {
+export function ParrotLogo({ className, size = "md" }: SkullLogoProps) {
   return (
     <svg
       viewBox="0 0 100 100"
@@ -20,79 +20,39 @@ export function ParrotLogo({ className, size = "md" }: ParrotLogoProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Parrot head */}
-      <ellipse cx="50" cy="40" rx="28" ry="30" stroke="currentColor" strokeWidth="3" fill="none" />
+      {/* Skull outline */}
+      <ellipse cx="50" cy="45" rx="35" ry="38" stroke="currentColor" strokeWidth="3" fill="none" />
       
-      {/* Crest/feathers on top */}
+      {/* Left eye socket */}
+      <ellipse cx="35" cy="40" rx="10" ry="12" stroke="currentColor" strokeWidth="2" fill="none" />
+      
+      {/* Right eye socket */}
+      <ellipse cx="65" cy="40" rx="10" ry="12" stroke="currentColor" strokeWidth="2" fill="none" />
+      
+      {/* Nose hole */}
       <path
-        d="M35 15 Q40 5 50 12 Q55 8 60 15 Q65 10 68 18"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        fill="none"
-      />
-      
-      {/* Eye */}
-      <circle cx="58" cy="35" r="6" fill="currentColor" />
-      <circle cx="60" cy="33" r="2" fill="none" stroke="currentColor" strokeWidth="1" />
-      
-      {/* Curved beak */}
-      <path
-        d="M72 42 Q85 45 82 55 Q78 62 70 58 Q65 55 68 48 Z"
-        stroke="currentColor"
-        strokeWidth="3"
-        fill="none"
-      />
-      
-      {/* Beak line */}
-      <path
-        d="M72 50 Q76 52 78 54"
+        d="M45 55 L50 65 L55 55"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
       />
       
-      {/* Body */}
+      {/* Jaw */}
       <path
-        d="M30 65 Q25 80 35 92 Q50 98 65 92 Q75 80 70 65"
+        d="M20 70 Q25 85 50 88 Q75 85 80 70"
         stroke="currentColor"
         strokeWidth="3"
         fill="none"
       />
       
-      {/* Wing detail */}
-      <path
-        d="M35 70 Q45 75 55 70"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M38 78 Q48 82 58 78"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      
-      {/* Tail feathers */}
-      <path
-        d="M40 92 L35 100"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M50 94 L50 102"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M60 92 L65 100"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+      {/* Teeth */}
+      <line x1="30" y1="75" x2="30" y2="82" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="40" y1="77" x2="40" y2="85" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="50" y1="78" x2="50" y2="88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="60" y1="77" x2="60" y2="85" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="70" y1="75" x2="70" y2="82" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
