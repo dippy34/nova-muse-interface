@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Sparkles, PenLine, ChevronRight } from "lucide-react";
+import { X, Sparkles, PenLine, ChevronRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,8 @@ interface PersonalityModalProps {
   currentMode: PersonalityMode;
   onModeChange: (mode: PersonalityMode, custom?: CustomPersonality) => void;
   currentCustom?: CustomPersonality | null;
+  savedPersonalities?: CustomPersonality[];
+  onDeleteSavedPersonality?: (name: string) => void;
 }
 
 type CustomStep = "select" | "choose-method" | "manual" | "ai-chat";
@@ -70,6 +72,8 @@ export function PersonalityModal({
   currentMode,
   onModeChange,
   currentCustom,
+  savedPersonalities = [],
+  onDeleteSavedPersonality,
 }: PersonalityModalProps) {
   const [customStep, setCustomStep] = useState<CustomStep>("select");
   const [customName, setCustomName] = useState(currentCustom?.name || "");
@@ -95,6 +99,11 @@ export function PersonalityModal({
 
   const handleSelectPersonality = (personality: Personality) => {
     onModeChange(personality.id);
+    handleClose();
+  };
+
+  const handleSelectSavedPersonality = (saved: CustomPersonality) => {
+    onModeChange("Custom", saved);
     handleClose();
   };
 
@@ -256,40 +265,92 @@ export function PersonalityModal({
                 );
               })}
 
-              {/* Separator */}
+              {/* Saved Custom Personalities Section */}
+              {savedPersonalities.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-border/50" />
+                    <span className="text-xs text-muted-foreground">Your Personalities</span>
+                    <div className="flex-1 h-px bg-border/50" />
+                  </div>
+
+                  {savedPersonalities.map((saved) => {
+                    const isActive = currentMode === "Custom" && currentCustom?.name === saved.name;
+                    
+                    return (
+                      <div
+                        key={saved.name}
+                        className={cn(
+                          "w-full p-4 rounded-lg border text-left transition-all duration-300 relative group",
+                          isActive
+                            ? "border-primary bg-accent box-glow"
+                            : "border-border/50 hover:border-primary/50 hover:bg-accent/50"
+                        )}
+                      >
+                        <button
+                          onClick={() => handleSelectSavedPersonality(saved)}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎭</span>
+                            <div className="flex-1 pr-8">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-primary">
+                                  {saved.name}
+                                </span>
+                                {isActive && (
+                                  <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {saved.description}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        
+                        {/* Delete button */}
+                        {onDeleteSavedPersonality && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteSavedPersonality(saved.name);
+                            }}
+                            className="absolute top-4 right-4 p-1.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`Delete ${saved.name}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Create New Custom Personality */}
               <div className="flex items-center gap-3 py-2">
                 <div className="flex-1 h-px bg-border/50" />
-                <span className="text-xs text-muted-foreground">or</span>
+                <span className="text-xs text-muted-foreground">
+                  {savedPersonalities.length > 0 ? "Create New" : "Custom"}
+                </span>
                 <div className="flex-1 h-px bg-border/50" />
               </div>
 
-              {/* Custom Personality Option */}
               <button
                 onClick={handleCustomClick}
-                className={cn(
-                  "w-full p-4 rounded-lg border text-left transition-all duration-300",
-                  currentMode === "Custom"
-                    ? "border-primary bg-accent box-glow"
-                    : "border-border/50 hover:border-primary/50 hover:bg-accent/50"
-                )}
+                className="w-full p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 text-left transition-all duration-300"
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">✨</span>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-primary">
-                        Custom Mode
-                      </span>
-                      {currentMode === "Custom" && currentCustom && (
-                        <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
-                          {currentCustom.name}
-                        </span>
-                      )}
-                    </div>
+                    <span className="font-semibold text-primary">
+                      Create Custom Personality
+                    </span>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {currentMode === "Custom" && currentCustom 
-                        ? currentCustom.description 
-                        : "Create your own AI personality with manual entry or AI assistance."}
+                      Build your own AI personality with manual entry or AI assistance.
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
