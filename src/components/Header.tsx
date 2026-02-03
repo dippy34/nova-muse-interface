@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { SkullLogo } from "./SkullLogo";
+import { ParrotLogo } from "./ParrotLogo";
 
 interface HeaderProps {
   currentMode: string;
@@ -10,10 +10,10 @@ export function Header({ currentMode, onSettingsClick }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border/50">
       <div className="flex items-center gap-3">
-        <SkullLogo size="sm" />
+        <ParrotLogo size="sm" />
         <div>
           <h1 className="text-xl font-bold text-primary text-glow tracking-wider">
-            NOVA-HUB
+            NOVA
           </h1>
           <p className="text-xs text-muted-foreground">
             Currently: <span className="text-primary">{currentMode} Mode</span>
