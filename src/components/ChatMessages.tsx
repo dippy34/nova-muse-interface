@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { SkullLogo } from "./SkullLogo";
+import { ParrotLogo } from "./ParrotLogo";
 import { cn } from "@/lib/utils";
 
 export interface Message {
@@ -46,7 +46,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
             {message.role === "user" ? (
               <span className="text-sm font-bold">U</span>
             ) : (
-              <SkullLogo size="sm" className="w-5 h-5" />
+              <ParrotLogo size="sm" className="w-5 h-5" />
             )}
           </div>
 
@@ -70,7 +70,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
       {isLoading && (
         <div className="flex gap-3 max-w-3xl mx-auto">
           <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-accent border border-primary/50">
-            <SkullLogo size="sm" className="w-5 h-5 animate-pulse" />
+            <ParrotLogo size="sm" className="w-5 h-5 animate-pulse" />
           </div>
           <div className="flex-1 p-4 rounded-lg bg-card border border-border/50">
             <div className="flex items-center gap-1">

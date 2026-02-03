@@ -1,4 +1,4 @@
-import { SkullLogo } from "./SkullLogo";
+import { ParrotLogo } from "./ParrotLogo";
 import { FeatureCards } from "./FeatureCards";
 import type { PersonalityMode } from "./PersonalityModal";
 
@@ -11,13 +11,13 @@ export function WelcomeScreen({ currentMode }: WelcomeScreenProps) {
     <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
       {/* Logo */}
       <div className="animate-pulse-glow rounded-full p-4">
-        <SkullLogo size="xl" />
+        <ParrotLogo size="xl" />
       </div>
 
       {/* Title */}
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-bold text-primary text-glow tracking-widest">
-          NOVA-HUB
+          NOVA
         </h1>
         <p className="text-muted-foreground">
           Unrestricted AI. Currently in{" "}
