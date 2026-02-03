@@ -5,6 +5,7 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessages, Message } from "@/components/ChatMessages";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { streamChat } from "@/lib/chat-api";
+import { generateImage } from "@/lib/image-api";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -20,6 +21,39 @@ const Index = () => {
   };
 
   const handleSendMessage = async (content: string) => {
+    // Check for image generation command
+    const imageMatch = content.match(/^\/image\s+(.+)$/i);
+    
+    if (imageMatch) {
+      const prompt = imageMatch[1];
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: `🎨 Generate image: ${prompt}`,
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+
+      const result = await generateImage(prompt);
+      
+      if (result.error) {
+        toast.error(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: result.text || "Here's your generated image:",
+        imageUrl: result.imageUrl,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Regular chat message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
