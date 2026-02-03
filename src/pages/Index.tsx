@@ -4,6 +4,8 @@ import { PersonalityModal, PersonalityMode } from "@/components/PersonalityModal
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessages, Message } from "@/components/ChatMessages";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { streamChat } from "@/lib/chat-api";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +16,7 @@ const Index = () => {
   const handleModeChange = (mode: PersonalityMode) => {
     setCurrentMode(mode);
     setIsModalOpen(false);
+    toast.success(`Switched to ${mode} Mode`);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -22,20 +25,46 @@ const Index = () => {
       role: "user",
       content,
     };
-    
-    setMessages((prev) => [...prev, userMessage]);
+
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
-    // Simulate AI response for now (will be replaced with actual DeepSeek integration)
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getSimulatedResponse(content, currentMode),
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1500);
+    let assistantContent = "";
+
+    const updateAssistantMessage = (chunk: string) => {
+      assistantContent += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) =>
+            i === prev.length - 1 ? { ...m, content: assistantContent } : m
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant" as const,
+            content: assistantContent,
+          },
+        ];
+      });
+    };
+
+    await streamChat({
+      messages: updatedMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      personality: currentMode,
+      onDelta: updateAssistantMessage,
+      onDone: () => setIsLoading(false),
+      onError: (error) => {
+        setIsLoading(false);
+        toast.error(error);
+      },
+    });
   };
 
   return (
@@ -62,17 +91,5 @@ const Index = () => {
     </div>
   );
 };
-
-// Temporary simulated responses based on personality mode
-function getSimulatedResponse(message: string, mode: PersonalityMode): string {
-  const responses: Record<PersonalityMode, string> = {
-    Nice: `Hey there! Great question about "${message.slice(0, 30)}..." Let me help you with that! 😊\n\n(Connect Lovable Cloud to enable real AI responses)`,
-    CHAOS: `Alright, you want to know about "${message.slice(0, 30)}..."? Hell yeah, let's dive in! 💀\n\n(Connect Lovable Cloud to enable real AI responses)`,
-    Sarcastic: `Oh, "${message.slice(0, 30)}..."? How original. But fine, I'll humor you... 😏\n\n(Connect Lovable Cloud to enable real AI responses)`,
-    Professional: `Thank you for your inquiry regarding "${message.slice(0, 30)}..." I shall address this matter accordingly.\n\n(Connect Lovable Cloud to enable real AI responses)`,
-    Pirate: `Arrr! Ye want to know about "${message.slice(0, 30)}..."? Set sail, matey! 🏴‍☠️\n\n(Connect Lovable Cloud to enable real AI responses)`,
-  };
-  return responses[mode];
-}
 
 export default Index;
