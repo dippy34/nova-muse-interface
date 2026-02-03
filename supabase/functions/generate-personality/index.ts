@@ -54,10 +54,10 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+    if (!DEEPSEEK_API_KEY) {
+      console.error("DEEPSEEK_API_KEY is not configured");
+      throw new Error("DEEPSEEK_API_KEY is not configured");
     }
 
     console.log(`Personality generation request: ${message}`);
@@ -68,21 +68,21 @@ serve(async (req) => {
       { role: "user", content: message },
     ];
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "deepseek-chat",
         messages,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`AI Gateway error: ${response.status} - ${errorText}`);
+      console.error(`DeepSeek API error: ${response.status} - ${errorText}`);
       
       if (response.status === 429) {
         return new Response(
