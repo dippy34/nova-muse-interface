@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Sparkles, PenLine } from "lucide-react";
+import { X, Sparkles, PenLine, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +21,7 @@ interface Personality {
   description: string;
 }
 
-const personalities: Personality[] = [
+const presetPersonalities: Personality[] = [
   {
     id: "Nice",
     emoji: "😊",
@@ -52,12 +52,6 @@ const personalities: Personality[] = [
     title: "Pirate Mode",
     description: "Arr matey! Speaks like a sea captain. Swears like a sailor.",
   },
-  {
-    id: "Custom",
-    emoji: "✨",
-    title: "Custom Mode",
-    description: "Create your own AI personality with manual entry or AI assistance.",
-  },
 ];
 
 interface PersonalityModalProps {
@@ -68,7 +62,7 @@ interface PersonalityModalProps {
   currentCustom?: CustomPersonality | null;
 }
 
-type CustomStep = "select" | "manual" | "ai-chat";
+type CustomStep = "select" | "choose-method" | "manual" | "ai-chat";
 
 export function PersonalityModal({
   isOpen,
@@ -100,12 +94,12 @@ export function PersonalityModal({
   };
 
   const handleSelectPersonality = (personality: Personality) => {
-    if (personality.id === "Custom") {
-      setCustomStep("select");
-    } else {
-      onModeChange(personality.id);
-      handleClose();
-    }
+    onModeChange(personality.id);
+    handleClose();
+  };
+
+  const handleCustomClick = () => {
+    setCustomStep("choose-method");
   };
 
   const handleSaveCustom = () => {
@@ -175,7 +169,23 @@ export function PersonalityModal({
 
   if (!isOpen) return null;
 
-  const showCustomEditor = currentMode === "Custom" || customStep !== "select";
+  const getHeaderTitle = () => {
+    switch (customStep) {
+      case "choose-method": return "Custom Personality";
+      case "manual": return "Create Custom Personality";
+      case "ai-chat": return "AI Personality Creator";
+      default: return "AI Personality";
+    }
+  };
+
+  const getHeaderDescription = () => {
+    switch (customStep) {
+      case "choose-method": return "Choose how to create your custom personality.";
+      case "manual": return "Define your custom AI personality.";
+      case "ai-chat": return "Describe your ideal AI personality.";
+      default: return "Choose how you want the AI to respond.";
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -191,14 +201,10 @@ export function PersonalityModal({
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <div>
             <h2 className="text-lg font-bold text-primary text-glow">
-              {customStep === "manual" ? "Create Custom Personality" : 
-               customStep === "ai-chat" ? "AI Personality Creator" : 
-               "AI Personality"}
+              {getHeaderTitle()}
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
-              {customStep === "manual" ? "Define your custom AI personality." :
-               customStep === "ai-chat" ? "Describe your ideal AI personality." :
-               "Choose how you want the AI to respond."}
+              {getHeaderDescription()}
             </p>
           </div>
           <button
@@ -213,10 +219,9 @@ export function PersonalityModal({
         <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
           {customStep === "select" && (
             <>
-              {/* Personality Options */}
-              {personalities.map((personality) => {
+              {/* Preset Personality Options */}
+              {presetPersonalities.map((personality) => {
                 const isActive = currentMode === personality.id;
-                const isCustomOption = personality.id === "Custom";
                 
                 return (
                   <button
@@ -236,21 +241,14 @@ export function PersonalityModal({
                           <span className="font-semibold text-primary">
                             {personality.title}
                           </span>
-                          {isActive && !isCustomOption && (
+                          {isActive && (
                             <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
                               Active
                             </span>
                           )}
-                          {isActive && isCustomOption && currentCustom && (
-                            <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
-                              {currentCustom.name}
-                            </span>
-                          )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {isActive && isCustomOption && currentCustom 
-                            ? currentCustom.description 
-                            : personality.description}
+                          {personality.description}
                         </p>
                       </div>
                     </div>
@@ -258,31 +256,94 @@ export function PersonalityModal({
                 );
               })}
 
-              {/* Custom creation options - show when Custom is clicked */}
-              {personalities.find(p => p.id === "Custom") && (
-                <div className="pt-2 space-y-2">
-                  <p className="text-xs text-muted-foreground text-center">Create custom personality:</p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => setCustomStep("manual")}
-                    >
-                      <PenLine className="w-4 h-4" />
-                      Manual Entry
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => setCustomStep("ai-chat")}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      AI Assisted
-                    </Button>
+              {/* Separator */}
+              <div className="flex items-center gap-3 py-2">
+                <div className="flex-1 h-px bg-border/50" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border/50" />
+              </div>
+
+              {/* Custom Personality Option */}
+              <button
+                onClick={handleCustomClick}
+                className={cn(
+                  "w-full p-4 rounded-lg border text-left transition-all duration-300",
+                  currentMode === "Custom"
+                    ? "border-primary bg-accent box-glow"
+                    : "border-border/50 hover:border-primary/50 hover:bg-accent/50"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✨</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-primary">
+                        Custom Mode
+                      </span>
+                      {currentMode === "Custom" && currentCustom && (
+                        <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
+                          {currentCustom.name}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {currentMode === "Custom" && currentCustom 
+                        ? currentCustom.description 
+                        : "Create your own AI personality with manual entry or AI assistance."}
+                    </p>
                   </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
                 </div>
-              )}
+              </button>
             </>
+          )}
+
+          {customStep === "choose-method" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground text-center">
+                How would you like to create your custom personality?
+              </p>
+              
+              <button
+                onClick={() => setCustomStep("manual")}
+                className="w-full p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 text-left transition-all duration-300"
+              >
+                <div className="flex items-start gap-3">
+                  <PenLine className="w-6 h-6 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-semibold text-primary">Manual Entry</span>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Write your own personality name, description, and system prompt.
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCustomStep("ai-chat")}
+                className="w-full p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 text-left transition-all duration-300"
+              >
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-6 h-6 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-semibold text-primary">AI Assisted</span>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Describe your ideal personality and let AI generate it for you.
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
+                </div>
+              </button>
+
+              <Button
+                variant="outline"
+                onClick={() => setCustomStep("select")}
+                className="w-full mt-2"
+              >
+                Back
+              </Button>
+            </div>
           )}
 
           {customStep === "manual" && (
@@ -321,7 +382,7 @@ export function PersonalityModal({
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setCustomStep("select")}
+                  onClick={() => setCustomStep("choose-method")}
                   className="flex-1"
                 >
                   Back
@@ -396,7 +457,7 @@ export function PersonalityModal({
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setCustomStep("select")}
+                  onClick={() => setCustomStep("choose-method")}
                   className="flex-1"
                 >
                   Back
