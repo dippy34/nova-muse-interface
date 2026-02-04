@@ -31,34 +31,18 @@ const personalityPrompts: Record<string, string> = {
   Pirate: "You are Nova in Pirate mode. Arr matey! You speak like a sea captain from the golden age of piracy. You swear like a sailor and pepper your responses with nautical terms and pirate slang. But ye still be helpful, savvy?",
 };
 
-// Convert messages to multimodal format for Lovable AI
-function formatMessagesForAPI(messages: Message[]): Array<{ role: string; content: string | Array<unknown> }> {
+// Convert messages to API format - DeepSeek doesn't support images
+function formatMessagesForAPI(messages: Message[]): Array<{ role: string; content: string }> {
   return messages.map((msg) => {
-    // If message has images, format as multimodal content
+    let textContent = typeof msg.content === "string" ? msg.content : "";
+    
+    // If there are images, add a note that they were attached but can't be analyzed
     if (msg.images && msg.images.length > 0) {
-      const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
-      
-      // Add images first
-      for (const imageUrl of msg.images) {
-        content.push({
-          type: "image_url",
-          image_url: { url: imageUrl },
-        });
-      }
-      
-      // Add text content if present
-      if (msg.content && typeof msg.content === "string" && msg.content.trim()) {
-        content.push({
-          type: "text",
-          text: msg.content,
-        });
-      }
-      
-      return { role: msg.role, content };
+      const imageNote = `[User attached ${msg.images.length} image(s) - Note: DeepSeek cannot analyze images. Please describe what you want me to know about the image.]`;
+      textContent = textContent ? `${imageNote}\n\n${textContent}` : imageNote;
     }
     
-    // Regular text message
-    return { role: msg.role, content: typeof msg.content === "string" ? msg.content : "" };
+    return { role: msg.role, content: textContent };
   });
 }
 
@@ -71,10 +55,10 @@ serve(async (req) => {
   try {
     const { messages, personality = "CHAOS", customPersonality }: ChatRequest = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+    if (!DEEPSEEK_API_KEY) {
+      console.error("DEEPSEEK_API_KEY is not configured");
+      throw new Error("DEEPSEEK_API_KEY is not configured");
     }
 
     // Use custom personality prompt if provided, otherwise use predefined
@@ -87,22 +71,17 @@ serve(async (req) => {
       console.log(`Chat request received. Personality: ${personality}, Messages: ${messages.length}`);
     }
 
-    // Check if any message has images
-    const hasImages = messages.some((m) => m.images && m.images.length > 0);
-    console.log(`Has images: ${hasImages}`);
-
-    // Format messages for the API
+    // Format messages for the API (text only for DeepSeek)
     const formattedMessages = formatMessagesForAPI(messages);
 
-    // Use Lovable AI Gateway (supports vision)
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
           ...formattedMessages,
@@ -113,7 +92,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Lovable AI error: ${response.status} - ${errorText}`);
+      console.error(`DeepSeek API error: ${response.status} - ${errorText}`);
       
       if (response.status === 429) {
         return new Response(
@@ -126,7 +105,7 @@ serve(async (req) => {
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds to your Lovable workspace." }),
+          JSON.stringify({ error: "Payment required, please check your DeepSeek account." }),
           {
             status: 402,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -135,7 +114,7 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: `AI error: ${response.status}` }),
+        JSON.stringify({ error: `DeepSeek API error: ${response.status}` }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,7 +122,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Streaming response from Lovable AI...");
+    console.log("Streaming response from DeepSeek...");
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
