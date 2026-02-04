@@ -1,4 +1,8 @@
 import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { ParrotLogo } from "./ParrotLogo";
 import { cn } from "@/lib/utils";
 
@@ -53,15 +57,20 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
           {/* Message bubble */}
           <div
             className={cn(
-              "flex-1 p-4 rounded-lg",
+              "flex-1 p-4 rounded-lg overflow-x-auto",
               message.role === "user"
                 ? "bg-primary/10 border border-primary/30"
                 : "bg-card border border-border/50"
             )}
           >
-            <p className="text-sm whitespace-pre-wrap text-foreground">
-              {message.content}
-            </p>
+            <div className="prose prose-sm prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-primary prose-pre:bg-muted prose-pre:text-foreground">
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       ))}
