@@ -117,11 +117,12 @@ const Index = () => {
     }
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, images?: string[]) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content,
+      images,
     };
 
     const updatedMessages = [...messages, userMessage];
@@ -154,6 +155,7 @@ const Index = () => {
       messages: updatedMessages.map((m) => ({
         role: m.role,
         content: m.content,
+        images: m.images,
       })),
       personality: currentMode,
       customPersonality: customPersonality || undefined,

@@ -3,6 +3,7 @@ import type { PersonalityMode, CustomPersonality } from "@/components/Personalit
 interface Message {
   role: "user" | "assistant";
   content: string;
+  images?: string[];
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
