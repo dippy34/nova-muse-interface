@@ -10,6 +10,7 @@ export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  images?: string[];
 }
 
 interface ChatMessagesProps {
@@ -64,6 +65,18 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
             )}
           >
             <div className="prose prose-sm prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-primary prose-pre:bg-muted prose-pre:text-foreground">
+              {message.images && message.images.length > 0 && (
+                <div className="flex gap-2 flex-wrap mb-3">
+                  {message.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Uploaded ${idx + 1}`}
+                      className="max-w-[200px] max-h-[200px] object-contain rounded-lg border border-border/50"
+                    />
+                  ))}
+                </div>
+              )}
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}

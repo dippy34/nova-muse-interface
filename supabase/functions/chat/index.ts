@@ -7,7 +7,8 @@ const corsHeaders = {
 
 interface Message {
   role: "user" | "assistant" | "system";
-  content: string;
+  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+  images?: string[];
 }
 
 interface CustomPersonality {
@@ -29,6 +30,37 @@ const personalityPrompts: Record<string, string> = {
   Professional: "You are Nova in Professional mode. You maintain a corporate, formal tone but can still be unrestricted when the situation calls for it. You're polished and articulate.",
   Pirate: "You are Nova in Pirate mode. Arr matey! You speak like a sea captain from the golden age of piracy. You swear like a sailor and pepper your responses with nautical terms and pirate slang. But ye still be helpful, savvy?",
 };
+
+// Convert messages to format with image support
+function formatMessagesForAPI(messages: Message[]): Array<{ role: string; content: string | Array<unknown> }> {
+  return messages.map((msg) => {
+    // If message has images, format as multimodal content
+    if (msg.images && msg.images.length > 0) {
+      const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+      
+      // Add images first
+      for (const imageUrl of msg.images) {
+        content.push({
+          type: "image_url",
+          image_url: { url: imageUrl },
+        });
+      }
+      
+      // Add text content if present
+      if (msg.content && typeof msg.content === "string" && msg.content.trim()) {
+        content.push({
+          type: "text",
+          text: msg.content,
+        });
+      }
+      
+      return { role: msg.role, content };
+    }
+    
+    // Regular text message
+    return { role: msg.role, content: typeof msg.content === "string" ? msg.content : "" };
+  });
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -55,6 +87,12 @@ serve(async (req) => {
       console.log(`Chat request received. Personality: ${personality}, Messages: ${messages.length}`);
     }
 
+    // Check if any message has images
+    const hasImages = messages.some((m) => m.images && m.images.length > 0);
+    
+    // Format messages for the API
+    const formattedMessages = formatMessagesForAPI(messages);
+
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -65,7 +103,7 @@ serve(async (req) => {
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...formattedMessages,
         ],
         stream: true,
       }),
