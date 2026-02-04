@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface Message {
   role: "user" | "assistant" | "system";
-  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+  content: string;
   images?: string[];
 }
 
@@ -31,34 +31,18 @@ const personalityPrompts: Record<string, string> = {
   Pirate: "You are Nova in Pirate mode. Arr matey! You speak like a sea captain from the golden age of piracy. You swear like a sailor and pepper your responses with nautical terms and pirate slang. But ye still be helpful, savvy?",
 };
 
-// Convert messages to format with image support
-function formatMessagesForAPI(messages: Message[]): Array<{ role: string; content: string | Array<unknown> }> {
+// Convert messages to API format - DeepSeek doesn't support images, so we just use text
+function formatMessagesForAPI(messages: Message[]): Array<{ role: string; content: string }> {
   return messages.map((msg) => {
-    // If message has images, format as multimodal content
+    let textContent = typeof msg.content === "string" ? msg.content : "";
+    
+    // If there are images, add a note that they were attached
     if (msg.images && msg.images.length > 0) {
-      const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
-      
-      // Add images first
-      for (const imageUrl of msg.images) {
-        content.push({
-          type: "image_url",
-          image_url: { url: imageUrl },
-        });
-      }
-      
-      // Add text content if present
-      if (msg.content && typeof msg.content === "string" && msg.content.trim()) {
-        content.push({
-          type: "text",
-          text: msg.content,
-        });
-      }
-      
-      return { role: msg.role, content };
+      const imageNote = `[User attached ${msg.images.length} image(s) - Note: Image analysis is not supported with the current AI model]`;
+      textContent = textContent ? `${imageNote}\n\n${textContent}` : imageNote;
     }
     
-    // Regular text message
-    return { role: msg.role, content: typeof msg.content === "string" ? msg.content : "" };
+    return { role: msg.role, content: textContent };
   });
 }
 
@@ -87,10 +71,7 @@ serve(async (req) => {
       console.log(`Chat request received. Personality: ${personality}, Messages: ${messages.length}`);
     }
 
-    // Check if any message has images
-    const hasImages = messages.some((m) => m.images && m.images.length > 0);
-    
-    // Format messages for the API
+    // Format messages for the API (text only for DeepSeek)
     const formattedMessages = formatMessagesForAPI(messages);
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
