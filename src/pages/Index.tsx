@@ -4,6 +4,9 @@ import { PersonalityModal, PersonalityMode, CustomPersonality } from "@/componen
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessages, Message } from "@/components/ChatMessages";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { ChatSidebar } from "@/components/ChatSidebar";
+import { SaveChatDialog } from "@/components/SaveChatDialog";
+import { useChats, Chat } from "@/hooks/use-chats";
 import { streamChat } from "@/lib/chat-api";
 import { toast } from "sonner";
 
@@ -16,6 +19,11 @@ const Index = () => {
   const [savedPersonalities, setSavedPersonalities] = useState<CustomPersonality[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+
+  const { chats, saveChat, updateChat, deleteChat, renameChat } = useChats();
 
   // Load saved personalities from localStorage
   useEffect(() => {
@@ -40,7 +48,6 @@ const Index = () => {
     if (mode === "Custom" && custom) {
       setCustomPersonality(custom);
       
-      // Save to list if it's a new personality
       const exists = savedPersonalities.some(p => p.name === custom.name);
       if (!exists) {
         savePersonalitiesToStorage([...savedPersonalities, custom]);
@@ -58,7 +65,6 @@ const Index = () => {
     const updated = savedPersonalities.filter(p => p.name !== name);
     savePersonalitiesToStorage(updated);
     
-    // If we deleted the currently active personality, switch to CHAOS
     if (customPersonality?.name === name) {
       setCurrentMode("CHAOS");
       setCustomPersonality(null);
@@ -66,8 +72,52 @@ const Index = () => {
     toast.success(`Deleted "${name}"`);
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setCurrentChatId(null);
+    setCurrentMode("CHAOS");
+    setCustomPersonality(null);
+  };
+
+  const handleSelectChat = (chat: Chat) => {
+    setMessages(chat.messages);
+    setCurrentChatId(chat.id);
+    setCurrentMode(chat.personality);
+    setCustomPersonality(chat.custom_personality);
+  };
+
+  const handleSaveChat = async (name: string) => {
+    const result = await saveChat(name, messages, currentMode, customPersonality);
+    if (result) {
+      setCurrentChatId(result.id);
+      toast.success(`Chat saved as "${name}"`);
+    } else {
+      toast.error("Failed to save chat");
+    }
+  };
+
+  const handleDeleteChat = async (id: string) => {
+    const success = await deleteChat(id);
+    if (success) {
+      if (currentChatId === id) {
+        handleNewChat();
+      }
+      toast.success("Chat deleted");
+    } else {
+      toast.error("Failed to delete chat");
+    }
+  };
+
+  const handleRenameChat = async (id: string, name: string) => {
+    const success = await renameChat(id, name);
+    if (success) {
+      toast.success("Chat renamed");
+    } else {
+      toast.error("Failed to rename chat");
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
-    // Regular chat message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -108,7 +158,16 @@ const Index = () => {
       personality: currentMode,
       customPersonality: customPersonality || undefined,
       onDelta: updateAssistantMessage,
-      onDone: () => setIsLoading(false),
+      onDone: async () => {
+        setIsLoading(false);
+        // Auto-update if chat is already saved
+        if (currentChatId) {
+          setMessages((currentMessages) => {
+            updateChat(currentChatId, currentMessages, currentMode, customPersonality);
+            return currentMessages;
+          });
+        }
+      },
       onError: (error) => {
         setIsLoading(false);
         toast.error(error);
@@ -117,29 +176,52 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <Header
-        currentMode={currentMode}
-        onSettingsClick={() => setIsModalOpen(true)}
-      />
-
-      {messages.length === 0 ? (
-        <WelcomeScreen currentMode={currentMode} />
-      ) : (
-        <ChatMessages messages={messages} isLoading={isLoading} />
+    <div className="flex h-screen bg-background">
+      {sidebarOpen && (
+        <ChatSidebar
+          chats={chats}
+          currentChatId={currentChatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+          onDeleteChat={handleDeleteChat}
+          onRenameChat={handleRenameChat}
+        />
       )}
 
-      <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+      <div className="flex-1 flex flex-col">
+        <Header
+          currentMode={currentMode}
+          onSettingsClick={() => setIsModalOpen(true)}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onSaveChat={() => setSaveDialogOpen(true)}
+          showSaveButton={messages.length > 0 && !currentChatId}
+          isSaved={!!currentChatId}
+        />
 
-      <PersonalityModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        currentMode={currentMode}
-        onModeChange={handleModeChange}
-        currentCustom={customPersonality}
-        savedPersonalities={savedPersonalities}
-        onDeleteSavedPersonality={handleDeleteSavedPersonality}
-      />
+        {messages.length === 0 ? (
+          <WelcomeScreen currentMode={currentMode} />
+        ) : (
+          <ChatMessages messages={messages} isLoading={isLoading} />
+        )}
+
+        <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+
+        <PersonalityModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          currentMode={currentMode}
+          onModeChange={handleModeChange}
+          currentCustom={customPersonality}
+          savedPersonalities={savedPersonalities}
+          onDeleteSavedPersonality={handleDeleteSavedPersonality}
+        />
+
+        <SaveChatDialog
+          isOpen={saveDialogOpen}
+          onClose={() => setSaveDialogOpen(false)}
+          onSave={handleSaveChat}
+        />
+      </div>
     </div>
   );
 };
